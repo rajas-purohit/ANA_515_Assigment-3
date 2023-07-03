@@ -1,0 +1,178 @@
+---
+title: "ANA 515 Assignment 3"
+author: "Rajas Purohit"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<!-- ## R Markdown -->
+<!-- This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>. -->
+<!-- When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this: -->
+```{r cars, echo=FALSE}
+```
+<!-- ## Including Plots -->
+```{r pressure, echo=FALSE}
+#plot(pressure)
+```
+
+
+<!-- Directions: -->
+<!-- 1.	Go to https://www1.ncdc.noaa.gov/pub/data/swdi/stormevents/csvfiles/ and download the bulk storm details data for the year you were assigned, in the file that starts “StormEvents_details” and includes “dXXXX”. For example, it looks like this for 2017:   -->
+<!-- *Make sure it is the details file, not fatalities or locations -->
+<!-- Move this into a good local directory for your current working directory and read and save it. (5 points) -->
+
+``` {r section1, include=FALSE, echo = FALSE}
+
+library(tidyverse)
+
+StormEventsDdetails1988 <- read_csv("StormEvents_details-ftp_v1.0_d1988_c20220425.csv")
+
+```
+
+
+
+<!-- 2.	Limit the dataframe to the following columns: (10 points) -->
+<!-- •	BEGIN_YEARMONTH -->
+<!-- •	EPISODE_ID -->
+<!-- •	STATE -->
+<!-- •	STATE_ FIPS -->
+<!-- •	CZ_NAME (this is the county name) -->
+<!-- •	CZ_TYPE -->
+<!-- •	CZ_FIPS -->
+<!-- •	EVENT_TYPE -->
+
+``` {r section2, include=FALSE, echo = FALSE}
+
+subsetColumns <- c("BEGIN_YEARMONTH", "EPISODE_ID", "STATE", "STATE_FIPS", "CZ_NAME", "CZ_TYPE", "CZ_FIPS", "EVENT_TYPE")
+
+subsetData <- StormEventsDdetails1988[subsetColumns]
+
+head(subsetData)
+
+```
+
+
+
+<!-- 3.	Arrange the data by the state name (STATE) (5 points)  -->
+
+``` {r section3, include=FALSE, echo = FALSE}
+
+arrangedByState <- arrange(subsetData, STATE)
+
+```
+
+
+
+<!-- 4.	Change state and county names to title case (e.g., “New Jersey” instead of “NEW JERSEY”) (5 points)  -->
+
+``` {r section4, include=FALSE, echo = FALSE}
+
+arrangedByState$STATE <- str_to_title(arrangedByState$STATE)
+
+arrangedByState$CountyName <- str_to_title(arrangedByState$CZ_NAME)
+
+arrangedByState = subset(arrangedByState, select = -c(CZ_NAME) )
+                                                    
+
+```
+
+
+
+<!-- 5.	Limit to the events listed by county FIPS (CZ_TYPE of “C”) and then remove the CZ_TYPE column (5 points)  -->
+
+``` {r section5, include=FALSE, echo = FALSE}
+
+arrangedByState2 <- filter(arrangedByState, CZ_TYPE == "C")
+
+arrangedByState2 = subset(arrangedByState, select = -c(CZ_TYPE) )
+
+```
+
+
+
+<!-- 6.	Pad the state and county FIPS with a “0” at the beginning (hint: there’s a function in stringr to do this) and then unite the two columns to make one FIPS column with the new state-county FIPS code (5 points)  -->
+
+``` {r section6, include=FALSE, echo = FALSE}
+
+arrangedByState2$STATE_FIPS <- str_pad(arrangedByState2$STATE_FIPS, width = 3, side = "left", pad = "0", use_width = TRUE)
+
+
+arrangedByState2$CZ_FIPS <- str_pad(arrangedByState2$CZ_FIPS, width = 3, side = "left", pad = "0")
+
+arrangedByState2 <-unite(arrangedByState2, "FIPS", STATE_FIPS, CZ_FIPS)
+
+
+```
+
+
+<!-- 7.	Change all the column names to lower case (you may want to try the rename_all function for this) (5 points)  -->
+
+``` {r section7, include=FALSE, echo = FALSE}
+
+arrangedByState3 <- rename_all(arrangedByState2, tolower)
+
+```
+
+
+
+<!-- 8.	There is data that comes with base R on U.S. states (data("state")). Use that to create a dataframe with these three columns: state name, area, and region (5 points) -->
+
+``` {r section8, include=FALSE, echo = FALSE}
+
+data("state")
+
+usa_state_info <- data.frame(state=state.name, region = state.region, area = state.area)
+
+```
+
+
+
+<!-- 9.	Create a dataframe with the number of events per state. Merge in the state information dataframe you just created in step 8. Remove any states that are not in the state information dataframe. (5 points)  -->
+
+``` {r section9, include=FALSE, echo = FALSE}
+
+table(arrangedByState3$state)
+
+StateFrequency <- data.frame(table(arrangedByState3$state))
+
+arrangedByState4 <- rename(StateFrequency, c("state"  =  "Var1"))
+
+arrangedByState5 <- merge(x = usa_state_info, y = arrangedByState4, by.x= "state", by.y = "state")
+
+```
+
+# Storm events in 1988 as compared to Land Area
+
+<!-- 10.	Create the following plot (10 points):  -->
+
+``` {r section10, echo = FALSE}
+
+library(ggplot2)
+
+storm_plot <- ggplot(arrangedByState5, aes(x = area, y = Freq)) +
+  geom_point(aes(color = region)) +
+  labs(x = "Land Area (square miles)",
+      y = "# of storm events in 1988")
+
+storm_plot
+
+```
+
+
+
+
+<!-- 11.	Create a new repository in your GitHub (ANA 515 Assignment 3) and upload your code file.  -->
+<!-- Include a Readme file as well.  -->
+<!-- Include a screenshot or output file of the plot.  -->
+<!-- You should have 3 files in the new repository. -->
+
+
+
+<!-- 12.	Submit your GitHub link to the assignments page in the Blackboard course site.  -->
